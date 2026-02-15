@@ -18,14 +18,20 @@ class ChatService:
         self.retriever = CorpusRetriever(settings.db_path)
         self.llm = LLMClient(settings)
 
-    def answer(self, question: str, top_k: int | None = None, max_opinions: int | None = None) -> ChatResponse:
+    def answer(
+        self,
+        question: str,
+        top_k: int | None = None,
+        max_opinions: int | None = None,
+        user_openai_api_key: str | None = None,
+    ) -> ChatResponse:
         top_k = top_k or self.settings.default_top_k
         max_opinions = max_opinions or self.settings.default_max_opinions
         lang = self.detect_language(question)
 
         translated_query = None
         if lang != "ar":
-            translated_query = self.llm.translate_to_arabic(question)
+            translated_query = self.llm.translate_to_arabic(question, api_key=user_openai_api_key)
 
         search_query = translated_query or question
         raw_hits = self.retriever.search(search_query, limit=max(self.settings.max_retrieval_candidates, top_k))
@@ -40,7 +46,13 @@ class ChatService:
                 notes=["No matching passages found in current local index."],
             )
 
-        llm_payload = self.llm.build_answer(question, lang, selected, max_opinions=max_opinions)
+        llm_payload = self.llm.build_answer(
+            question,
+            lang,
+            selected,
+            max_opinions=max_opinions,
+            api_key=user_openai_api_key,
+        )
 
         if llm_payload:
             return self._build_response_from_llm(lang, llm_payload, selected)
@@ -90,7 +102,7 @@ class ChatService:
             language=lang,
             opinions=opinions,
             citations=[citation_map[cid] for cid in used_ids],
-            notes=[] if self.llm.enabled else ["OPENAI_API_KEY not set; using extractive fallback mode."],
+            notes=[] if (user_openai_api_key or self.settings.openai_api_key) else ["No API key provided; using extractive fallback mode."],
         )
 
     def _build_fallback_response(self, lang: str, selected: list[Passage], max_opinions: int) -> ChatResponse:
@@ -125,7 +137,7 @@ class ChatService:
             language=lang,
             opinions=opinions,
             citations=[citation_map[cid] for cid in used_ids if cid in citation_map],
-            notes=["OPENAI_API_KEY not set; using extractive fallback mode."],
+            notes=["No API key provided; using extractive fallback mode."],
         )
 
     @staticmethod
@@ -144,7 +156,7 @@ class ChatService:
     @staticmethod
     def _fallback_summary(lang: str, selected: list[Passage]) -> str:
         if lang == "ar":
-            return "فيما يلي خلاصة مبنية على نصوص من الشاملة مع عرض آراء متعددة وتوثيق كل رأي بمصدره."
+            return "فيما يلي خلاصة مبنية على نصوص من المصدر المحلي مع عرض آراء متعددة وتوثيق كل رأي بمصدره."
         return "Below is a source-grounded summary from primary texts, with multiple viewpoints and explicit citations."
 
     @staticmethod
@@ -157,5 +169,5 @@ class ChatService:
     @staticmethod
     def _no_results_answer(lang: str) -> str:
         if lang == "ar":
-            return "لم أجد نتائج كافية في الفهرس الحالي. يرجى تجربة صياغة أخرى أو توسيع بيانات الشاملة المستوردة."
+            return "لم أجد نتائج كافية في الفهرس الحالي. يرجى تجربة صياغة أخرى أو توسيع بيانات المصدر المستوردة."
         return "No sufficient matches were found in the current local index. Try rephrasing or importing more source data."

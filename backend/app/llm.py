@@ -11,12 +11,18 @@ from .retrieval import Passage
 
 class LLMClient:
     def __init__(self, settings: Settings):
-        self.enabled = bool(settings.openai_api_key)
+        self.default_api_key = settings.openai_api_key
         self.model = settings.openai_model
-        self.client = OpenAI(api_key=settings.openai_api_key) if self.enabled else None
 
-    def translate_to_arabic(self, text: str) -> str | None:
-        if not self.enabled:
+    def _client(self, api_key: str | None) -> OpenAI | None:
+        key = (api_key or self.default_api_key or "").strip()
+        if not key:
+            return None
+        return OpenAI(api_key=key)
+
+    def translate_to_arabic(self, text: str, api_key: str | None = None) -> str | None:
+        client = self._client(api_key)
+        if not client:
             return None
 
         messages = [
@@ -27,7 +33,7 @@ class LLMClient:
             {"role": "user", "content": text},
         ]
         try:
-            response = self.client.chat.completions.create(model=self.model, messages=messages, temperature=0)
+            response = client.chat.completions.create(model=self.model, messages=messages, temperature=0)
             translated = (response.choices[0].message.content or "").strip()
             return translated or None
         except Exception:
@@ -39,8 +45,10 @@ class LLMClient:
         question_language: str,
         passages: list[Passage],
         max_opinions: int,
+        api_key: str | None = None,
     ) -> dict[str, Any] | None:
-        if not self.enabled:
+        client = self._client(api_key)
+        if not client:
             return None
 
         context_lines = []
@@ -80,7 +88,7 @@ class LLMClient:
         )
 
         try:
-            response = self.client.chat.completions.create(
+            response = client.chat.completions.create(
                 model=self.model,
                 temperature=0.2,
                 response_format={"type": "json_object"},

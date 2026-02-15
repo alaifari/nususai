@@ -3,8 +3,12 @@ const chatForm = document.getElementById("chatForm");
 const questionInput = document.getElementById("questionInput");
 const clearChatBtn = document.getElementById("clearChat");
 const sendBtn = document.getElementById("sendBtn");
+const apiKeyInput = document.getElementById("apiKeyInput");
+const saveKeyBtn = document.getElementById("saveKeyBtn");
 const userTpl = document.getElementById("userMessageTemplate");
 const botTpl = document.getElementById("botMessageTemplate");
+
+const API_KEY_SESSION_KEY = "nusus_user_openai_api_key";
 
 function detectDir(text) {
   const arabicRegex = /[\u0600-\u06FF]/;
@@ -112,12 +116,40 @@ function scrollToBottom() {
   chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
+function saveApiKey() {
+  const key = apiKeyInput.value.trim();
+  if (!key) {
+    sessionStorage.removeItem(API_KEY_SESSION_KEY);
+    appendSystemMessage("API key removed from current browser session.");
+    return;
+  }
+  sessionStorage.setItem(API_KEY_SESSION_KEY, key);
+  apiKeyInput.value = "";
+  appendSystemMessage("API key saved for this session only.");
+}
+
+function loadApiKeyState() {
+  const hasKey = Boolean(sessionStorage.getItem(API_KEY_SESSION_KEY));
+  if (hasKey) {
+    appendSystemMessage("Session API key detected. You can ask questions now.");
+  } else {
+    appendSystemMessage("Add your OpenAI API key above to generate multilingual answers with your own token usage.");
+  }
+}
+
 async function askBackend(question) {
+  const apiKey = (sessionStorage.getItem(API_KEY_SESSION_KEY) || "").trim();
+  const headers = {
+    "Content-Type": "application/json",
+  };
+
+  if (apiKey) {
+    headers["X-OpenAI-API-Key"] = apiKey;
+  }
+
   const response = await fetch("/api/chat", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers,
     body: JSON.stringify({ question }),
   });
 
@@ -153,6 +185,14 @@ chatForm.addEventListener("submit", async (event) => {
   }
 });
 
+saveKeyBtn.addEventListener("click", saveApiKey);
+apiKeyInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    saveApiKey();
+  }
+});
+
 questionInput.addEventListener("input", normalizeTextAreaHeight);
 
 clearChatBtn.addEventListener("click", () => {
@@ -161,5 +201,8 @@ clearChatBtn.addEventListener("click", () => {
       <p>Nusus AI can answer in the same language as your question and provide multiple viewpoints with citations from source texts.</p>
     </article>
   `;
+  loadApiKeyState();
   questionInput.focus();
 });
+
+loadApiKeyState();

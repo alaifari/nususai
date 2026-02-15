@@ -28,6 +28,12 @@
         </article>
       </section>
 
+      <section class="api-key-panel" aria-label="OpenAI key">
+        <label for="apiKeyInput">Your OpenAI API key</label>
+        <input id="apiKeyInput" type="password" placeholder="sk-..." />
+        <button id="saveKeyBtn" class="ghost-btn" type="button">Save Key</button>
+      </section>
+
       <form id="chatForm" class="chat-form" autocomplete="off">
         <label class="sr-only" for="questionInput">Ask your question</label>
         <textarea
@@ -42,7 +48,7 @@
 
       <footer class="footer-note">
         <p>
-          Answers are generated from your local source index and include Arabic citations for every response.
+          Local-only mode is active. Before any public launch, add auth boundaries, abuse controls, and privacy policy.
         </p>
       </footer>
     </main>

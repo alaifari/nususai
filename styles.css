@@ -91,6 +91,29 @@ h1 {
   padding-right: 4px;
 }
 
+.api-key-panel {
+  display: grid;
+  grid-template-columns: 1fr 2fr auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  background: #fffdf8;
+}
+
+.api-key-panel label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.api-key-panel input {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  font: inherit;
+}
+
 .message {
   border-radius: 16px;
   padding: 12px 14px;
@@ -259,6 +282,10 @@ textarea:focus,
   }
 
   .chat-form {
+    grid-template-columns: 1fr;
+  }
+
+  .api-key-panel {
     grid-template-columns: 1fr;
   }
 

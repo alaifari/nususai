@@ -11,4 +11,4 @@ build-index:
 	python3 scripts/build_sqlite_from_jsonl.py --input data/corpus_sample.jsonl --output data/corpus.sqlite
 
 run:
-	uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000
+	uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8010
