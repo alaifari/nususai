@@ -31,6 +31,8 @@ Nusus AI is a local-first web application for asking questions in any language a
 - `scripts/import_sqlite_table_to_jsonl.py`: convert existing sqlite table to expected JSONL schema.
 - `scripts/seed_sample_data.py`: generate sample dataset for quick local testing.
 - `scripts/download_corpus_iso.sh`: download corpus ISO using env URL.
+- `scripts/extract_and_index_full_corpus.sh`: one-command full extraction + indexing pipeline.
+- `scripts/build_jsonl_from_corpus_dbs.py`: converts extracted `.db` files into JSONL for indexing.
 
 ## Requirements
 - Python 3.11+
@@ -66,30 +68,26 @@ uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8010
 - `http://localhost:8010/api/health`
 
 ## Full corpus download and indexing
-1. Download ISO (set URL at runtime):
+1. Download ISO:
 ```bash
 CORPUS_ISO_URL='https://.../full.iso' ./scripts/download_corpus_iso.sh ./data/raw
 ```
 
-2. Extract/convert data into sqlite table or JSONL.
-
-3. Export sqlite table to JSONL format expected by Nusus AI:
+2. Run full automatic pipeline:
 ```bash
-python3 scripts/import_sqlite_table_to_jsonl.py \
-  --db ./path/to/source.sqlite \
-  --table passages_table \
-  --id-col id \
-  --book-col book_title_ar \
-  --author-col author_ar \
-  --source-col source_ref_ar \
-  --text-col text_ar \
-  --volume-col volume \
-  --page-col page \
-  --output ./data/corpus_export.jsonl
+CORPUS_ARCHIVE_PASSWORD='YOUR_PASSWORD' ./scripts/extract_and_index_full_corpus.sh ./data/raw/corpus.iso
 ```
 
-4. Build retrieval index:
+This command does everything:
+- mounts the ISO,
+- extracts the corpus databases,
+- converts text into JSONL,
+- builds `data/corpus.sqlite`,
+- unmounts the ISO.
+
+If you already have a plain sqlite source (not encrypted), you can still use:
 ```bash
+python3 scripts/import_sqlite_table_to_jsonl.py ...
 python3 scripts/build_sqlite_from_jsonl.py --input ./data/corpus_export.jsonl --output ./data/corpus.sqlite
 ```
 
